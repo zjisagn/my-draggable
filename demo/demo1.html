@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Demo</title>
+
+    <style>
+        .box {
+            width: 50px;
+            height: 50px;
+            position: absolute;
+        }
+    </style>
+</head>
+
+<body>
+    <div ondragover="allowDrop(event)" ondrop="drop(event)" id="dragPanel" style="width:200px;height:400px;background-color:beige;position: absolute;left: 100px;">
+        <div id = "b1" class="box" style="top:0; left:0;background: seagreen;"></div>
+        <div id = "b2" class="box" style="top:70px; left:0;background: chartreuse;"></div>
+    </div>
+
+    <div ondragover="allowDrop(event)" ondrop="drop(event)" style="width:600px;height:400px;background-color:beige;position: absolute;left: 350px;">
+
+    </div>
+
+
+    <script src="../myDraggable.js"></script>
+    <script>
+        let boxes = Array.from(document.querySelectorAll('.box'))
+        // let refLine = new RefLine()
+        var img = new Image(); 
+        img.src = '1.jpg'; 
+        boxes.forEach((item) => {
+            var dragPanel = document.getElementById("dragPanel");
+            let drag = new MyDraggable(item, {
+                isOnlyDrag: true
+            })
+
+            drag
+                .on('dragstart', (e, dom) => {
+                    e.dataTransfer.setData("Text", e.target.id);
+                    e.dataTransfer.setDragImage(img, 100, 100);
+                })
+                .on('drag', (e, dom) => {
+
+                })
+                .on('dragend', (e, dom) => {
+                })
+        })
+
+
+        function allowDrop(ev){
+            ev.preventDefault();
+        }
+
+
+        function drop(ev) {
+            ev.preventDefault();
+            var data = ev.dataTransfer.getData("Text");
+            ev.target.appendChild(document.getElementById(data));
+        }
+
+    </script>
+</body>
+
+</html>

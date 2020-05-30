@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <title>Demo</title>
+
+    <style>
+        .box {
+            width: 50px;
+            height: 50px;
+            position: absolute;
+        }
+    </style>
+</head>
+<body>
+<div  id="container" style="width:1200px;height:800px;background-color:beige;position: absolute;margin-left:100px;left: 100px;">
+    <div class="box" draggable="false" style="top:0; left:0;background: seagreen;"></div>
+    <div class="box" draggable="false" style="top:70px; left:0;background: chartreuse;"></div>
+    <div class="box" draggable="false" style="top:140px; left:0;background: saddlebrown;"></div>
+    <div class="box" style="width:80px;top:210px; left:0;background: salmon;"></div>
+    <div class="box" style="width:100px;top:280px; left:0;background: sandybrown;"></div>
+    <div class="box" style="width:120px;top:350px; height: 20px; left:0;background: skyblue;"></div>
+</div>
+
+
+<script src="../myDraggable.1.js"></script>
+<script>
+    let boxes   = Array.from(document.querySelectorAll('.box'))
+    // let refLine = new RefLine()
+
+    boxes.forEach((item) => {
+        var container = document.getElementById("container");
+        let drag = new MyDraggable(item)
+    })
+
+</script>
+</body>
+</html>
