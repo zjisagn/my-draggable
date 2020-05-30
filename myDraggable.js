@@ -93,6 +93,8 @@
             printInfo( 'Failed to init dragTarget')
             return;
         }
+        // 解绑时，还原属性
+        this._dragTargetDraggable = this.dragTarget.getAttribute("draggable");
         if(this.option.draggable !== false) {
             this.dragTarget.setAttribute("draggable", "true")
         }
@@ -105,7 +107,9 @@
         that.dragTarget.addEventListener(DRAG_EVENTS[0], dragstart);
         that.dragTarget.addEventListener(DRAG_EVENTS[1], drag);
         that.dragTarget.addEventListener(DRAG_EVENTS[2], dragend);
-
+        this.dragstartFun = dragstart;
+        this.dragFun = drag;
+        this.dragendFun = dragend;
         // 拖拽开始
         function dragstart(e){
             that.watcher.trigger(DRAG_EVENTS[0], e, that.dragTarget);
@@ -119,6 +123,18 @@
         // 拖拽结束
         function dragend(e){
             that.watcher.trigger(DRAG_EVENTS[2], e, that.dragTarget);
+        }
+
+    }
+
+    DragDrop.prototype.unbind = function () {
+        that.dragTarget.removeEventListener(DRAG_EVENTS[0], this.dragstartFun);
+        that.dragTarget.removeEventListener(DRAG_EVENTS[1], this.dragFun);
+        that.dragTarget.removeEventListener(DRAG_EVENTS[2], this.dragendFun);
+        if(this._dragTargetDraggable != null) {
+            this.dragTarget.setAttribute("draggable", this._dragTargetDraggable);
+        } else {
+            this.dragTarget.removeAttribute("draggable");
         }
 
     }
@@ -154,7 +170,7 @@
         that.isMoveStart = false;
         that.dragTarget.addEventListener(EVENTS[0], moveStart);
         var zIndex = that.dragTarget.style.zIndex;
-
+        this.moveStartFun = moveStart;
         // 开始移动
         function moveStart(e){
             that.isMoveStart = true;
@@ -183,6 +199,10 @@
             that.watcher.trigger(EVENTS[2], e, that.dragTarget)       
         }
 
+    }
+
+    DragMove.prototype.unbind = function () {
+        that.dragTarget.removeEventListener(DRAG_EVENTS[0], this.moveStartFun);
     }
 
     DragMove.prototype.on = function () {
@@ -450,6 +470,11 @@
         this.watcher.on.apply(this.watcher, arguments)
 
         return this.watcher
+    }
+
+    Draggable.prototype.unbind = function () {
+        this.dragMove && this.dragMove.unbind();
+        this.dragDrop && this.dragDrop.unbind();
     }
 
     return Draggable;
