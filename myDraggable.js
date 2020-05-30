@@ -215,6 +215,7 @@
     function Draggable(el, option){
         this.option = option || {};
         this.isOnlyDrag = this.option.isOnlyDrag;
+        this.isHandleBoundary = this.option.isOnlyDrag || false;
         this.init(el);
     }
 
@@ -245,25 +246,28 @@
                      .on(EVENTS[2], moveEnd)
         // 开始移动
         function moveStart(e, dragTarget){
+            dragTarget = that.getDragTarget(dragTarget);
             that.moveInfo.clientX = e.clientX;
             that.moveInfo.clientY = e.clientY;
             var bcf = dragTarget.getBoundingClientRect();
             that.moveInfo.diffX = e.clientX - bcf.left;
             that.moveInfo.diffY = e.clientY - bcf.top;
 
-            that.watcher.trigger('start', e, dragTarget);
+            that.watcher.trigger(EVENTS[0], e, dragTarget);
 
         }
 
         // 移动
         function move(e, dragTarget){
+            dragTarget = that.getDragTarget(dragTarget);
             that.updateTargetLocation(e, dragTarget)
-            that.watcher.trigger('move', e, dragTarget)
+            that.watcher.trigger(EVENTS[1], e, dragTarget)
         }
 
         // 结束移动
         function moveEnd(e, dragTarget){
-            that.watcher.trigger('end', e, dragTarget)       
+            dragTarget = that.getDragTarget(dragTarget);
+            that.watcher.trigger(EVENTS[2], e, dragTarget)       
         }
 
     }
@@ -357,8 +361,8 @@
     
     // 更新定位
     Draggable.prototype.updateTargetLocation = function(e, dragTarget){
-
         var lt = this.getTargetLeftAndTop(e, dragTarget);
+
         lt = this.handleBoundaryConditionProxy(lt, dragTarget)
         
         var left = lt.left;
@@ -374,15 +378,30 @@
         this.moveInfo.top = top;
     }
 
+    // 获取拖拽目标dom
+    Draggable.prototype.getDragTarget = function(dragTarget){
+
+        if(typeof this.option.getDragTarget == 'function') {
+            try{
+                dragTarget = this.option.getDragTarget(dragTarget);
+            } catch(e){printInfo(e)}
+        }
+
+        return dragTarget;
+    }
+
+
      // 处理边界情况代理
      Draggable.prototype.handleBoundaryConditionProxy = function(leftTop, dragTarget){
-         var result = leftTop;
-        if(typeof this.option.handleBoundaryCondition == 'function') {
-            try{
-                result = this.option.handleBoundaryCondition(leftTop, dragTarget)
-            } catch(e){printInfo(e)}
-        } else {
-            result = this.handleBoundaryCondition(leftTop, dragTarget);
+        var result = leftTop;
+        if(this.isHandleBoundary) {
+            if(typeof this.option.handleBoundaryCondition == 'function') {
+                try{
+                    result = this.option.handleBoundaryCondition(leftTop, dragTarget)
+                } catch(e){printInfo(e)}
+            } else {
+                result = this.handleBoundaryCondition(leftTop, dragTarget);
+            }
         }
         return result;
      }
@@ -432,6 +451,7 @@
         var zIndex;
         // 拖拽开始
         function dragstart(e, dragTarget){
+            dragTarget = that.getDragTarget(dragTarget);
             if(that.isOnlyDrag !== true) {
                 that.moveInfo.clientX = e.clientX;
                 that.moveInfo.clientY = e.clientY;
@@ -442,6 +462,7 @@
 
         // 拖拽中
         function drag(e, dragTarget){
+            dragTarget = that.getDragTarget(dragTarget);
             if(that.isOnlyDrag !== true) {
                 that.moveInfo.lastMoveInfo = {
                     left: that.moveInfo.left,
@@ -455,6 +476,7 @@
 
         // 拖拽结束
         function dragend(e, dragTarget){
+            dragTarget = that.getDragTarget(dragTarget);
             if(that.isOnlyDrag !== true) {
                 that.isMoveStart = false;
                 dragTarget.style.zIndex = zIndex;
