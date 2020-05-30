@@ -49,24 +49,19 @@
         var dragMask = document.getElementById("drag-mask")
 
         boxes.forEach((item) => {
-            var dragPanel = document.getElementById("dragPanel");
             let drag = new MyDraggable(item, {
-                isOnlyDrag: true
+                getDragTarget: function(){
+                    return  dragView;
+                }
+            }).on("mousedown", function(e){
+                dragMask.style.display = 'block';
+                dragView.style.top = e.clientY;
+                dragView.style.left = e.clientX;
+            }).on("mouseup", function(e){
+                dragMask.style.display = 'none';
+            }).on("dragend", function(e){
+                dragMask.style.display = 'none';
             })
-
-            drag
-                .on('dragstart', (e, dom) => {
-                    dragMask.style.display = 'block';
-                    dragView.style.top = e.clientY;
-                    dragView.style.left = e.clientX;
-                    new MyDraggable(dragView)
-                })
-                .on('drag', (e, dom) => {
-
-                })
-                .on('dragend', (e, dom) => {
-
-                })
         })
 
 
@@ -78,7 +73,7 @@
         function drop(ev) {
             ev.preventDefault();
             var data = ev.dataTransfer.getData("Text");
-            ev.target.appendChild(document.getElementById(data));
+            // ev.target.appendChild(document.getElementById(data));
         }
 
     </script>
