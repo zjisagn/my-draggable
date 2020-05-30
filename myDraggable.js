@@ -37,6 +37,18 @@
         console.log(msg);
     }
 
+    //阻止事件冒泡
+    function pauseEvent(e){
+        if(e.stopPropagation) e.stopPropagation();
+
+        if(e.preventDefault) e.preventDefault();
+
+        e.cancelBubble=true;
+
+        e.returnValue=false;
+        return false;
+    }
+
 
     var Watcher = function () {
         this.events = {}
@@ -177,6 +189,8 @@
             document.addEventListener(EVENTS[1], move);
             document.addEventListener(EVENTS[2], moveEnd);
             that.watcher.trigger(EVENTS[0], e, that.dragTarget);
+            // 防止触发了浏览器的 drag 操作，导致mouseup丢失。
+            pauseEvent(e);
         }
 
         // 移动
@@ -214,27 +228,49 @@
 
     function Draggable(el, option){
         this.option = option || {};
-        this.isOnlyDrag = this.option.isOnlyDrag;
-        this.isHandleBoundary = this.option.isOnlyDrag || false;
+        this.isBindDrag = this.option.isBindDrag;
+        this.isHandleBoundary = this.option.isHandleBoundary || false;
         this.init(el);
     }
 
 
     Draggable.prototype.init = function(el){
         this.watcher = new Watcher();
-        if(this.isOnlyDrag) {
+        if(this.isBindDrag) {
             this.dragDrop = new DragDrop(el);
             this.bindDragEvent();
         } else {
             this.dragMove = new DragMove(el);
-            this.dragDrop = new DragDrop(el, {
-                draggable: false
-            });
             this.bindMoveStartEvent();
-            // 防止触发dragstart事件时候，且在移动过程中不会触发mousemove事件，松开鼠标也不会触发mouseup事件
-            this.bindDragEvent();
         }
     }
+
+     // 绑定拖拽事件
+     Draggable.prototype.bindDragEvent = function(){
+        var that = this;
+        this.dragDrop.on(DRAG_EVENTS[0], dragstart)
+                     .on(DRAG_EVENTS[1], drag)
+                     .on(DRAG_EVENTS[2], dragend);
+        var zIndex;
+        // 拖拽开始
+        function dragstart(e, dragTarget){
+            dragTarget = that.getDragTarget(dragTarget);
+            that.watcher.trigger('dragstart', e, dragTarget);
+        }
+
+        // 拖拽中
+        function drag(e, dragTarget){
+            dragTarget = that.getDragTarget(dragTarget);
+            that.watcher.trigger('drag', e, dragTarget);
+        }
+
+        // 拖拽结束
+        function dragend(e, dragTarget){
+            dragTarget = that.getDragTarget(dragTarget);
+            that.watcher.trigger('dragend', e, dragTarget);
+        }
+    }
+
 
     // 绑定开始移动事件
     Draggable.prototype.bindMoveStartEvent = function(){
@@ -406,8 +442,8 @@
         return result;
      }
 
-     // 处理边界情况
-     Draggable.prototype.handleBoundaryCondition = function(leftTop, dragTarget){
+    // 处理边界情况
+    Draggable.prototype.handleBoundaryCondition = function(leftTop, dragTarget){
         var left = leftTop.left;
         var top = leftTop.top;
 
@@ -441,53 +477,7 @@
      }
 
 
-
-    // 绑定拖拽事件
-    Draggable.prototype.bindDragEvent = function(){
-        var that = this;
-        this.dragDrop.on(DRAG_EVENTS[0], dragstart)
-                     .on(DRAG_EVENTS[1], drag)
-                     .on(DRAG_EVENTS[2], dragend);
-        var zIndex;
-        // 拖拽开始
-        function dragstart(e, dragTarget){
-            dragTarget = that.getDragTarget(dragTarget);
-            if(that.isOnlyDrag !== true) {
-                that.moveInfo.clientX = e.clientX;
-                that.moveInfo.clientY = e.clientY;
-                zIndex = dragTarget.style.zIndex;
-            }
-            that.watcher.trigger('dragstart', e, dragTarget);
-        }
-
-        // 拖拽中
-        function drag(e, dragTarget){
-            dragTarget = that.getDragTarget(dragTarget);
-            if(that.isOnlyDrag !== true) {
-                that.moveInfo.lastMoveInfo = {
-                    left: that.moveInfo.left,
-                    top: that.moveInfo.top
-                };
-                that.updateTargetLocation(e, dragTarget)
-                dragTarget.style.zIndex = INDEX_MAX;
-            } 
-            that.watcher.trigger('drag', e, dragTarget);
-        }
-
-        // 拖拽结束
-        function dragend(e, dragTarget){
-            dragTarget = that.getDragTarget(dragTarget);
-            if(that.isOnlyDrag !== true) {
-                that.isMoveStart = false;
-                dragTarget.style.zIndex = zIndex;
-                // 在drag事件的触发过程中，松开鼠标时，还好触发一次drag事件，此时e.clientX和e.clientY都为0，会导致定位不准，所以重新定位一次。
-                dragTarget.style.left  = that.moveInfo.lastMoveInfo.left + 'px'
-                dragTarget.style.top   = that.moveInfo.lastMoveInfo.top + 'px';
-            }
-            that.watcher.trigger('dragend', e, dragTarget);
-        }
-    }
-
+    
     Draggable.prototype.on = function () {
         this.watcher.on.apply(this.watcher, arguments)
 

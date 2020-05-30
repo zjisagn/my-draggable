@@ -30,13 +30,9 @@
 </head>
 
 <body>
-    <div ondragover="allowDrop(event)" ondrop="drop(event)" id="dragPanel" style="width:200px;height:400px;background-color:beige;position: absolute;left: 100px;">
+    <div  style="width:200px;height:400px;background-color:beige;position: absolute;left: 100px;">
         <div id = "b1" class="box" style="top:0; left:0;background: seagreen;"></div>
         <div id = "b2" class="box" style="top:70px; left:0;background: chartreuse;"></div>
-    </div>
-
-    <div ondragover="allowDrop(event)" ondrop="drop(event)" style="width:600px;height:400px;background-color:beige;position: absolute;left: 350px;">
-
     </div>
 
     <div id="drag-mask" style="display: none;"><div id="drag-view" style="top: 0px; left: 0px;"><img src="1.jpg"></div></div>
@@ -63,18 +59,6 @@
                 dragMask.style.display = 'none';
             })
         })
-
-
-        function allowDrop(ev){
-            ev.preventDefault();
-        }
-
-
-        function drop(ev) {
-            ev.preventDefault();
-            var data = ev.dataTransfer.getData("Text");
-            // ev.target.appendChild(document.getElementById(data));
-        }
 
     </script>
 </body>
