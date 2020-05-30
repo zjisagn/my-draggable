@@ -131,6 +131,10 @@
 
     function DragMove(el, option){
         this.option = option || {};
+        this.isParentsOffsetChange = false;
+        if(this.option.isParentsOffsetChange != null) {
+            this.isParentsOffsetChange = this.option.isParentsOffsetChange;
+        }
         this.watcher = new Watcher();
         this.init(el);
     }
@@ -223,6 +227,10 @@
         function moveStart(e, dragTarget){
             that.moveInfo.clientX = e.clientX;
             that.moveInfo.clientY = e.clientY;
+            var bcf = dragTarget.getBoundingClientRect();
+            that.moveInfo.diffX = e.clientX - bcf.left;
+            that.moveInfo.diffY = e.clientY - bcf.top;
+
             that.watcher.trigger('start', e, dragTarget);
 
         }
@@ -241,17 +249,136 @@
     }
 
     // 更新定位
-    Draggable.prototype.updateTargetLocation = function(e, dragTarget){
+    Draggable.prototype.getTargetLeftAndTop = function(e, dragTarget){
+        var scrollLeft = this.getScrollLeft(dragTarget);
+        var scrollTop = this.getScrollTop(dragTarget);
+        var pOffset = this.getParentsOffsetSumProxy(dragTarget),
+            left = e.clientX - this.moveInfo.diffX - pOffset.left + scrollLeft,
+            top = e.clientY - this.moveInfo.diffY - pOffset.top + scrollTop;
+
+        return {
+            top: top,
+            left: left
+        }
+    }
+
+    // 获取纵向滚动条滚动高度
+    Draggable.prototype.getScrollTop = function(dragTarget){    
+        var scrollTop = 0;
+        if(typeof this.option.getScrollTop == 'function') {
+            try{
+                scrollTop = this.option.getScrollTop(dragTarget)
+            } catch(e){printInfo(e)}
+        } else {
+            if(document.documentElement&&document.documentElement.scrollTop){    
+                scrollTop=document.documentElement.scrollTop;    
+            }else if(document.body){    
+                scrollTop=document.body.scrollTop;    
+            }    
+        }
+        return scrollTop;    
+    } 
+
+    // 获取横向滚动条滚动高度
+    Draggable.prototype.getScrollLeft = function(dragTarget){    
+        var scrollLeft = 0;    
+        if(typeof this.option.getScrollLeft == 'function') {
+            try{
+                scrollLeft = this.option.getScrollLeft(dragTarget)
+            } catch(e){printInfo(e)}
+        } else {
+            if(document.documentElement&&document.documentElement.scrollLeft){    
+                scrollLeft=document.documentElement.scrollLeft;    
+            } else if(document.body){    
+                scrollLeft=document.body.scrollLeft;    
+            }    
+        }
+        return scrollLeft;    
+    } 
+
+
+
+     // 获取定位信息
+     Draggable.prototype.getTargetLeftAndTop2 = function(e, dragTarget){
+
         var left = e.clientX - this.moveInfo.clientX + dragTarget.offsetLeft;
         var top = e.clientY - this.moveInfo.clientY + dragTarget.offsetTop;
 
+        return {
+            top: top,
+            left: left
+        }
+
+    }
+
+    Draggable.prototype.getParentsOffsetSum = function(dragTarget){
+        var top = 0;
+        var left = 0;
+        var offsetParent = dragTarget && dragTarget.offsetParent
+        while(offsetParent) {
+            top += offsetParent.offsetTop;
+            left += offsetParent.offsetLeft;
+            offsetParent = offsetParent.offsetParent;
+        }
+
+        return {
+            top: top,
+            left: left
+        }
+    }
+
+    Draggable.prototype.getParentsOffsetSumProxy = function(dragTarget){
+       if(!this.isParentsOffsetChange && this.parentsOffsetSumCache != null) {
+            return  this.parentsOffsetSumCache
+       }
+       this.parentsOffsetSumCache = this.getParentsOffsetSum(dragTarget);
+       return this.parentsOffsetSumCache;
+    }
+    
+    // 更新定位
+    Draggable.prototype.updateTargetLocation = function(e, dragTarget){
+
+        var lt = this.getTargetLeftAndTop(e, dragTarget);
+        lt = this.handleBoundaryConditionProxy(lt, dragTarget)
+        
+        var left = lt.left;
+        var top = lt.top;
+
+        dragTarget.style.left  = left + 'px'
+        dragTarget.style.top   = top + 'px';
+        dragTarget.style.zIndex = 19911125;
+
+        this.moveInfo.clientX = e.clientX;
+        this.moveInfo.clientY = e.clientY;
+        this.moveInfo.left = left;
+        this.moveInfo.top = top;
+    }
+
+     // 处理边界情况代理
+     Draggable.prototype.handleBoundaryConditionProxy = function(leftTop, dragTarget){
+         var result = leftTop;
+        if(typeof this.option.handleBoundaryCondition == 'function') {
+            try{
+                result = this.option.handleBoundaryCondition(leftTop, dragTarget)
+            } catch(e){printInfo(e)}
+        } else {
+            result = this.handleBoundaryCondition(leftTop, dragTarget);
+        }
+        return result;
+     }
+
+     // 处理边界情况
+     Draggable.prototype.handleBoundaryCondition = function(leftTop, dragTarget){
+        var left = leftTop.left;
+        var top = leftTop.top;
+
         var width    = dragTarget.offsetWidth;
         var height   = dragTarget.offsetHeight;
-
         var minLeft = this.option.minLeft || 0;
         var minTop = this.option.minTop || 0;
         var maxLeft = this.option.maxLeft || document.documentElement.clientWidth;
         var maxTop = this.option.maxTop || document.documentElement.clientHeight;
+
         if(left < minLeft) {
             left = minLeft;
         }
@@ -268,15 +395,13 @@
             top = maxTop - height;
         }
 
-        dragTarget.style.left  = left + 'px'
-        dragTarget.style.top   = top + 'px';
-        dragTarget.style.zIndex = 19911125;
+        return {
+            top: top,
+            left: left
+        }
+     }
 
-        this.moveInfo.clientX = e.clientX;
-        this.moveInfo.clientY = e.clientY;
-        this.moveInfo.left = left;
-        this.moveInfo.top = top;
-    }
+
 
     // 绑定拖拽事件
     Draggable.prototype.bindDragEvent = function(){
